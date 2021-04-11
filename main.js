@@ -68,7 +68,18 @@ let init = function () {
             for (let child of e.target.children) {
                 if (child.tagName === "P" &&
                     child.getAttribute("contenteditable") === "true") {
+                    const childBoundingClientRect = child.getBoundingClientRect();
                     child.focus();
+                    if (e.x >= childBoundingClientRect.x + childBoundingClientRect.width) {
+                        // clicked right/outside of p, but by default cursor is put to beginning -> move to end
+                        // https://stackoverflow.com/questions/1125292/how-to-move-cursor-to-end-of-contenteditable-entity/3866442#3866442
+                        range = document.createRange();
+                        range.selectNodeContents(child);
+                        range.collapse(false);
+                        selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
                     break;
                 }
             }
