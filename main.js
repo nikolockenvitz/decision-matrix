@@ -72,13 +72,7 @@ let init = function () {
                     child.focus();
                     if (e.x >= childBoundingClientRect.x + childBoundingClientRect.width) {
                         // clicked right/outside of p, but by default cursor is put to beginning -> move to end
-                        // https://stackoverflow.com/questions/1125292/how-to-move-cursor-to-end-of-contenteditable-entity/3866442#3866442
-                        range = document.createRange();
-                        range.selectNodeContents(child);
-                        range.collapse(false);
-                        selection = window.getSelection();
-                        selection.removeAllRanges();
-                        selection.addRange(range);
+                        moveCaretToEndOfElement(child);
                     }
                     break;
                 }
@@ -113,6 +107,48 @@ let init = function () {
         if (rowIndex >= 1 && cellIndex >= 1) {
             updateScores();
         }
+    });
+
+    // Move caret to adjacent cell if arrow key is pressed and caret can no longer be moved inside cell
+    const currentCaretPosition = { anchorNode: null, anchorOffset: null };
+    document.addEventListener("keyup", function (e) {
+        let currentSelection = window.getSelection();
+        if (["ArrowUp", "ArrowRight", "ArrowLeft", "ArrowDown"].includes(e.key)) {
+            if (
+                currentSelection.anchorNode === currentCaretPosition.anchorNode &&
+                currentSelection.anchorOffset === currentCaretPosition.anchorOffset &&
+                currentSelection.anchorOffset === currentSelection.focusOffset &&
+                (currentSelection.anchorOffset === 0 || currentSelection.anchorOffset === currentSelection.anchorNode.textContent.length)
+            ) {
+                try {
+                    const table = document.getElementById("table");
+                    let tableCell = currentSelection.anchorNode;
+                    while (tableCell.tagName != "TD") {
+                        tableCell = tableCell.parentNode;
+                    }
+                    const cellIndexAdjacentCell = tableCell.cellIndex + (e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0);
+                    const rowIndexAdjacentCell = tableCell.parentNode.rowIndex + (e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0);
+                    if (
+                        rowIndexAdjacentCell < 0 ||
+                        rowIndexAdjacentCell >= table.rows.length - 1 ||
+                        (rowIndexAdjacentCell === 0 && cellIndexAdjacentCell <= 1) ||
+                        cellIndexAdjacentCell < 0 ||
+                        cellIndexAdjacentCell >= table.rows[0].cells.length
+                    ) {
+                        // skip, out of range or not-editable cell
+                    } else {
+                        const adjacentCell = table.rows[rowIndexAdjacentCell].cells[cellIndexAdjacentCell].childNodes[0];
+                        adjacentCell.focus();
+                        if (e.key === "ArrowLeft") {
+                            moveCaretToEndOfElement(adjacentCell);
+                        }
+                        currentSelection = window.getSelection();
+                    }
+                } catch {}
+            }
+        }
+        currentCaretPosition.anchorNode = currentSelection.anchorNode;
+        currentCaretPosition.anchorOffset = currentSelection.anchorOffset;
     });
 
     updateScores();
@@ -396,3 +432,13 @@ let resetTable = function () {
     localStorage.removeItem(LS_DATA);
     init();
 };
+
+function moveCaretToEndOfElement (element) {
+    // https://stackoverflow.com/questions/1125292/how-to-move-cursor-to-end-of-contenteditable-entity/3866442#3866442
+    range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+}
