@@ -7,8 +7,8 @@ let hideElement = function (el) { el.style.display = "none"; };
 
 const defaultContent = [
     ["","Weight","Alternative 1","Alternative 2"],
-    ["Criteria 1", "5", "1", "2"],
-    ["Criteria 2", "6", "3", "4"],
+    ["Criterion 1", "5", "1", "2"],
+    ["Criterion 2", "6", "3", "4"],
     ["Score", "", "", ""]];
 
 const cellTemplate = '<td><p contenteditable="true">{content}</p></td>';
@@ -330,7 +330,7 @@ let addRow = function (rowIndex, content) {
         rowIndex = table.rows.length-1;
     }
     if (content === undefined) {
-        content = ["Criteria"];
+        content = ["Criterion"];
     }
 
     let newRow = table.insertRow(rowIndex);
